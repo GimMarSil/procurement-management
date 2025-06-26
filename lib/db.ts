@@ -1,21 +1,14 @@
-import sql from 'mssql'
+import { ConnectionPool } from 'mssql'
 
-const config: sql.config = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER || 'localhost',
-  database: process.env.DB_NAME,
-  options: {
-    encrypt: true,
-    trustServerCertificate: true,
-  },
-}
-
-let pool: sql.ConnectionPool | null = null
+let pool: ConnectionPool | null = null
 
 export async function getDb() {
+  if (!process.env.SQLSERVER_CONN) {
+    throw new Error('SQLSERVER_CONN env var not set')
+  }
   if (!pool) {
-    pool = await sql.connect(config)
+    pool = new ConnectionPool(process.env.SQLSERVER_CONN)
+    await pool.connect()
   }
   return pool
 }
