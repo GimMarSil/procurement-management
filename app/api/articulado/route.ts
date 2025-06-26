@@ -10,7 +10,10 @@ export async function GET() {
     return NextResponse.json(result.recordset)
   } catch (err) {
     console.error(err)
-    return new NextResponse('Failed to fetch articulado', { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to fetch articulado' },
+      { status: 500 }
+    )
   }
 }
 
