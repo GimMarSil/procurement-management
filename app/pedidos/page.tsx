@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,92 +16,18 @@ export default function PedidosPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [supplierFilter, setSupplierFilter] = useState("all")
+  const [rfqs, setRfqs] = useState<RFQ[]>([])
 
-  // Mock data de pedidos
-  const rfqs: RFQ[] = [
-    {
-      id: "RFQ-001",
-      supplier: "FrancAir",
-      status: "Respondido",
-      sentDate: "2024-02-01",
-      dueDate: "2024-02-15",
-      projectId: "92114",
-      lines: [
-        {
-          id: "line-001",
-          articuladoId: "art-002",
-          plannedQuantity: 263,
-          description: "Iluminação de Segurança Normal Geral Vários",
-          unit: "un",
-        },
-        {
-          id: "line-002",
-          articuladoId: "art-003",
-          plannedQuantity: 45,
-          description: "GEN - Iluminação Normal Geral Vários",
-          unit: "un",
-        },
-      ],
-    },
-    {
-      id: "RFQ-002",
-      supplier: "Rexel - Porto",
-      status: "Respondido",
-      sentDate: "2024-02-01",
-      dueDate: "2024-02-15",
-      projectId: "92114",
-      lines: [
-        {
-          id: "line-003",
-          articuladoId: "art-001",
-          plannedQuantity: 3,
-          description: "Câmara IP policromática com capacidade de resolução 4K",
-          unit: "un",
-        },
-      ],
-    },
-    {
-      id: "RFQ-003",
-      supplier: "Sluz - Gaia",
-      status: "Pendente",
-      sentDate: "2024-02-02",
-      dueDate: "2024-02-16",
-      projectId: "92114",
-      lines: [
-        {
-          id: "line-004",
-          articuladoId: "art-003",
-          plannedQuantity: 45,
-          description: "GEN - Iluminação Normal Geral Vários",
-          unit: "un",
-        },
-        {
-          id: "line-005",
-          articuladoId: "art-005",
-          plannedQuantity: 150,
-          description: "Tubagem em PVC para instalações elétricas",
-          unit: "m",
-        },
-      ],
-    },
-    {
-      id: "RFQ-004",
-      supplier: "Nortécnica",
-      status: "Pendente",
-      sentDate: "2024-02-03",
-      dueDate: "2024-02-17",
-      projectId: "92114",
-      lines: [
-        {
-          id: "line-006",
-          articuladoId: "art-004",
-          plannedQuantity: 18,
-          description: "GEN - GTC/Geral/Vários",
-          unit: "un",
-        },
-      ],
-    },
-  ]
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch('/api/rfqs')
+      if (res.ok) {
+        const data: RFQ[] = await res.json()
+        setRfqs(data)
+      }
+    }
+    load()
+  }, [])
 
   const suppliers = [...new Set(rfqs.map((rfq) => rfq.supplier))]
 
