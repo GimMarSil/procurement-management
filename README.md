@@ -1,13 +1,30 @@
-# Procurement Management
+This project is a Next.js application.
 
-This project is a Next.js application. Development scripts are managed with `pnpm`.
+## Prerequisites
 
-## Running Tests
+- **Node.js**: version 18 or higher.
+- **pnpm**: used as the package manager.
 
-The project uses Jest together with React Testing Library. To run the test suite:
+Install pnpm if you don't have it installed:
 
 ```bash
-pnpm test
+npm install -g pnpm
 ```
 
-This will execute all `*.test.tsx` files using the configuration from `jest.config.js`.
+## Installation
+
+Install dependencies and start the development server:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+There are currently no required environment variables.
+
+## npm Scripts
+
+- `pnpm dev` – Starts the development server with Next.js.
+- `pnpm build` – Builds the production version of the application.
+- `pnpm start` – Runs the built application in production mode.
+- `pnpm lint` – Runs Next.js linting.
