@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { toast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,91 +19,24 @@ export default function RespostasPage() {
   const [showMappingModal, setShowMappingModal] = useState(false)
   const [selectedResponse, setSelectedResponse] = useState<SupplierResponse | null>(null)
 
-  // Mock data de respostas
-  const responses: SupplierResponse[] = [
-    {
-      id: "resp-001",
-      rfqId: "RFQ-001",
-      supplier: "FrancAir",
-      responseDate: "2024-02-10",
-      totalValue: 32497.22,
-      items: [
-        {
-          id: "item-001",
-          articuladoIds: ["art-002"],
-          supplierArticle: "ETAP-S1-LED",
-          brand: "ETAP",
-          supplierDescription: "Luminária de emergência LED tipo S1",
-          unit: "un",
-          quantity: 263,
-          unitPrice: 80.27,
-          supplierRef: "ETAP-S1-123",
-          comments: "Inclui bateria Li-Ion e teste automático",
-        },
-        {
-          id: "item-002",
-          articuladoIds: ["art-003"],
-          supplierArticle: "NORM-GEN-LED",
-          brand: "Philips",
-          supplierDescription: "Iluminação normal geral LED",
-          unit: "un",
-          quantity: 45,
-          unitPrice: 111.11,
-          supplierRef: "PHI-NORM-456",
-          comments: "Dimming disponível",
-        },
-      ],
-    },
-    {
-      id: "resp-002",
-      rfqId: "RFQ-002",
-      supplier: "Rexel - Porto",
-      responseDate: "2024-02-12",
-      totalValue: 16700.0,
-      items: [
-        {
-          id: "item-003",
-          articuladoIds: ["art-001"],
-          supplierArticle: "IP-CAM-4K",
-          brand: "Hikvision",
-          supplierDescription: "Câmara IP 4K com visão noturna",
-          unit: "un",
-          quantity: 3,
-          unitPrice: 1317.11,
-          supplierRef: "HIK-4K-789",
-          comments: "Inclui software de gestão",
-        },
-      ],
-    },
-  ]
+  const [responses, setResponses] = useState<SupplierResponse[]>([])
+  const [articuladoLines, setArticuladoLines] = useState<ArticuladoLine[]>([])
 
-  // Mock data do articulado para mapear
-  const articuladoLines: ArticuladoLine[] = [
-    {
-      id: "art-001",
-      familyProduct: "009-CCTV",
-      description: "Câmara IP policromática com capacidade de resolução 4K",
-      unit: "un",
-      plannedQuantity: 3,
-      projectId: "92114",
-    },
-    {
-      id: "art-002",
-      familyProduct: "026-Ilum. Segurança",
-      description: "Iluminação de Segurança Normal Geral Vários",
-      unit: "un",
-      plannedQuantity: 263,
-      projectId: "92114",
-    },
-    {
-      id: "art-003",
-      familyProduct: "025-Iluminação Norm",
-      description: "GEN - Iluminação Normal Geral Vários",
-      unit: "un",
-      plannedQuantity: 45,
-      projectId: "92114",
-    },
-  ]
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch('/api/responses')
+      if (res.ok) {
+        const data: SupplierResponse[] = await res.json()
+        setResponses(data)
+      }
+      const art = await fetch('/api/articulado')
+      if (art.ok) {
+        const lines: ArticuladoLine[] = await art.json()
+        setArticuladoLines(lines)
+      }
+    }
+    load()
+  }, [])
 
   const suppliers = [...new Set(responses.map((r) => r.supplier))]
 
