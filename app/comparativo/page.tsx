@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -544,8 +544,27 @@ function AwardCreator({
 }) {
   const [awardDate, setAwardDate] = useState(new Date().toISOString().split("T")[0])
   const [observations, setObservations] = useState("")
+  const [existingAwards, setExistingAwards] = useState<AwardType[]>([])
+  const [conflict, setConflict] = useState(false)
 
-  const createAward = () => {
+  useEffect(() => {
+    fetch('/api/adjudicacoes')
+      .then((r) => r.json())
+      .then((data: AwardType[]) => setExistingAwards(data))
+  }, [])
+
+  useEffect(() => {
+    const awarded = new Set(
+      existingAwards.flatMap((a) => a.lines.map((l) => l.articuladoId)),
+    )
+    setConflict(
+      articuladoLines.some(
+        (line) => selectedScenario[line.id] && awarded.has(line.id),
+      ),
+    )
+  }, [existingAwards, selectedScenario, articuladoLines])
+
+  const createAward = async () => {
     const awardLines = articuladoLines
       .filter((line) => selectedScenario[line.id])
       .map((line) => {
@@ -572,8 +591,20 @@ function AwardCreator({
       status: "Criada",
     }
 
-    console.log("Criar adjudicação:", award)
-    onClose()
+    const res = await fetch('/api/adjudicacoes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(award),
+    })
+
+    if (res.status === 409) {
+      alert('Conflito: já existe adjudicação para uma das linhas selecionadas.')
+      return
+    }
+
+    if (res.ok) {
+      onClose()
+    }
   }
 
   const supplierBreakdown = articuladoLines
@@ -646,11 +677,18 @@ function AwardCreator({
         ))}
       </div>
 
+      {conflict && (
+        <p className="text-sm text-red-600">
+          Já existe adjudicação para uma ou mais linhas selecionadas.
+        </p>
+      )}
       <div className="flex justify-end gap-2 pt-4">
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button onClick={createAward}>Criar Adjudicação</Button>
+        <Button onClick={createAward} disabled={conflict}>
+          Criar Adjudicação
+        </Button>
       </div>
     </div>
   )
