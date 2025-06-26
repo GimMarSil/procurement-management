@@ -1,5 +1,3 @@
-# Procurement Management
-
 This project is a Next.js application.
 
 ## Prerequisites
@@ -30,4 +28,3 @@ There are currently no required environment variables.
 - `pnpm build` – Builds the production version of the application.
 - `pnpm start` – Runs the built application in production mode.
 - `pnpm lint` – Runs Next.js linting.
-
