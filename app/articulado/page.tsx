@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,69 +26,18 @@ export default function ArticuladoPage() {
   const [selectAll, setSelectAll] = useState(false)
   const [showRFQModal, setShowRFQModal] = useState(false)
 
-  // Mock data baseado nas imagens
-  const articuladoLines: ArticuladoLine[] = [
-    {
-      id: "art-001",
-      familyProduct: "009-CCTV",
-      description: "Câmara IP policromática com capacidade de resolução 4K",
-      unit: "un",
-      plannedQuantity: 3,
-      observations: "GEN - CCTV/Geral/Vários",
-      code: "009-CCTV",
-      projectId: "92114",
-    },
-    {
-      id: "art-002",
-      familyProduct: "026-Ilum. Segurança",
-      description: "Iluminação de Segurança Normal Geral Vários",
-      unit: "un",
-      plannedQuantity: 263,
-      observations: "Tipo S1",
-      code: "026-Ilum. Segurança",
-      projectId: "92114",
-    },
-    {
-      id: "art-003",
-      familyProduct: "025-Iluminação Norm",
-      description: "GEN - Iluminação Normal Geral Vários",
-      unit: "un",
-      plannedQuantity: 45,
-      observations: "Fornecimento, montagem e ensaio do sistema",
-      code: "025-Iluminação Norm",
-      projectId: "92114",
-    },
-    {
-      id: "art-004",
-      familyProduct: "023-GTC",
-      description: "GEN - GTC/Geral/Vários",
-      unit: "un",
-      plannedQuantity: 18,
-      observations: "Sistema de Gestão Técnica Centralizada",
-      code: "023-GTC",
-      projectId: "92114",
-    },
-    {
-      id: "art-005",
-      familyProduct: "039-Tubos",
-      description: "Tubagem em PVC para instalações elétricas",
-      unit: "m",
-      plannedQuantity: 150,
-      observations: "Fornecimento e montagem de tubagem",
-      code: "039-Tubos",
-      projectId: "92114",
-    },
-    {
-      id: "art-006",
-      familyProduct: "032-Quadros Eléct.",
-      description: "Quadro elétrico principal QGBT",
-      unit: "un",
-      plannedQuantity: 2,
-      observations: "Fabricação e montagem de quadros",
-      code: "032-Quadros Eléct.",
-      projectId: "92114",
-    },
-  ]
+  const [articuladoLines, setArticuladoLines] = useState<ArticuladoLine[]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch('/api/articulado')
+      if (res.ok) {
+        const data: ArticuladoLine[] = await res.json()
+        setArticuladoLines(data)
+      }
+    }
+    load()
+  }, [])
 
   const families = [...new Set(articuladoLines.map((line) => line.familyProduct))]
 
