@@ -20,7 +20,15 @@ pnpm install
 pnpm dev
 ```
 
-There are currently no required environment variables.
+### Environment Variables
+
+Copy `.env.example` to `.env` and fill in the required values. The API routes use
+these variables for email and database access:
+
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` – settings for
+  Nodemailer.
+- `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SERVER` – SQL Server connection
+  details.
 
 ## npm Scripts
 
