@@ -1,6 +1,6 @@
 "use client"
-
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { toast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -274,7 +274,9 @@ function MappingEditor({
   }
 
   const saveMappings = () => {
-    console.log("Guardar mapeamentos:", mappings)
+    toast({
+      title: "Mapeamentos guardados",
+    })
     onClose()
   }
 

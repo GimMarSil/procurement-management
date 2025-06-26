@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -48,12 +49,12 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     // Simular salvamento
-    console.log("Configurações salvas:", settings)
+    toast({ title: "Configurações salvas" })
   }
 
   const handleReset = () => {
     // Simular reset
-    console.log("Configurações resetadas")
+    toast({ title: "Configurações restauradas" })
   }
 
   return (
