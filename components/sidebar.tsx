@@ -29,6 +29,7 @@ const navigation = [
   { name: "RFQs", href: "/rfqs", icon: ShoppingCart },
   { name: "Fornecedores", href: "/suppliers", icon: Users },
   { name: "Análise", href: "/analytics", icon: TrendingUp },
+  { name: "Logs", href: "/logs", icon: FileText },
   { name: "Configurações", href: "/settings", icon: Settings },
 ]
 
