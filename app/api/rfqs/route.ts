@@ -3,14 +3,15 @@ import sql from 'mssql'
 import { getDb } from '@/lib/db'
 
 export async function GET() {
-  const db = await getDb()
-  const result = await db
-    .request()
-    .query(`SELECT r.id, r.project, r.supplier, r.dueDate, r.createdAt,
-                   l.id AS lineId, l.description, l.quantity
-            FROM RFQs r
-            LEFT JOIN RFQLines l ON l.rfqId = r.id
-            ORDER BY r.id`)
+  try {
+    const db = await getDb()
+    const result = await db
+      .request()
+      .query(`SELECT r.id, r.project, r.supplier, r.dueDate, r.createdAt,
+                     l.id AS lineId, l.description, l.quantity
+              FROM RFQs r
+              LEFT JOIN RFQLines l ON l.rfqId = r.id
+              ORDER BY r.id`)
 
   const rfqs: any[] = []
   for (const row of result.recordset) {
@@ -35,12 +36,20 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json(rfqs)
+    return NextResponse.json(rfqs)
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json(
+      { error: 'Failed to fetch RFQs' },
+      { status: 500 }
+    )
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const { project, supplier, dueDate, lines = [] } = body
+  try {
+    const body = await req.json()
+    const { project, supplier, dueDate, lines = [] } = body
 
   if (!project || !supplier || !dueDate) {
     return NextResponse.json(
@@ -49,27 +58,34 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const db = await getDb()
-  const rfqResult = await db
-    .request()
-    .input('project', sql.NVarChar(255), project)
-    .input('supplier', sql.NVarChar(255), supplier)
-    .input('dueDate', sql.Date, dueDate)
-    .query(
-      'INSERT INTO RFQs (project, supplier, dueDate) OUTPUT INSERTED.id VALUES (@project, @supplier, @dueDate)'
-    )
-  const rfqId = rfqResult.recordset[0].id
-
-  for (const line of lines) {
-    await db
+    const db = await getDb()
+    const rfqResult = await db
       .request()
-      .input('rfqId', sql.Int, rfqId)
-      .input('description', sql.NVarChar(255), line.description)
-      .input('quantity', sql.Int, line.quantity)
+      .input('project', sql.NVarChar(255), project)
+      .input('supplier', sql.NVarChar(255), supplier)
+      .input('dueDate', sql.Date, dueDate)
       .query(
-        'INSERT INTO RFQLines (rfqId, description, quantity) VALUES (@rfqId, @description, @quantity)'
+        'INSERT INTO RFQs (project, supplier, dueDate) OUTPUT INSERTED.id VALUES (@project, @supplier, @dueDate)'
       )
-  }
+    const rfqId = rfqResult.recordset[0].id
 
-  return NextResponse.json({ id: rfqId }, { status: 201 })
+    for (const line of lines) {
+      await db
+        .request()
+        .input('rfqId', sql.Int, rfqId)
+        .input('description', sql.NVarChar(255), line.description)
+        .input('quantity', sql.Int, line.quantity)
+        .query(
+          'INSERT INTO RFQLines (rfqId, description, quantity) VALUES (@rfqId, @description, @quantity)'
+        )
+    }
+
+    return NextResponse.json({ id: rfqId }, { status: 201 })
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json(
+      { error: 'Failed to create RFQ' },
+      { status: 500 }
+    )
+  }
 }
