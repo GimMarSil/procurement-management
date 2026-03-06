@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,107 +9,49 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Eye, Edit, Send, Clock, CheckCircle, AlertTriangle, FileText, Plus, Search } from "lucide-react"
-import type { RFQ } from "@/types/procurement"
 import Link from "next/link"
+
+interface ApiRFQ {
+  id: number
+  project: string
+  supplier: string
+  dueDate: string
+  createdAt: string
+  sentAt?: string
+  lines: { id: number; description: string; quantity: number }[]
+}
 
 export default function PedidosPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [supplierFilter, setSupplierFilter] = useState("all")
+  const [rfqs, setRfqs] = useState<ApiRFQ[]>([])
 
-  // Mock data de pedidos
-  const rfqs: RFQ[] = [
-    {
-      id: "RFQ-001",
-      supplier: "FrancAir",
-      status: "Respondido",
-      sentDate: "2024-02-01",
-      dueDate: "2024-02-15",
-      projectId: "92114",
-      lines: [
-        {
-          id: "line-001",
-          articuladoId: "art-002",
-          plannedQuantity: 263,
-          description: "Iluminação de Segurança Normal Geral Vários",
-          unit: "un",
-        },
-        {
-          id: "line-002",
-          articuladoId: "art-003",
-          plannedQuantity: 45,
-          description: "GEN - Iluminação Normal Geral Vários",
-          unit: "un",
-        },
-      ],
-    },
-    {
-      id: "RFQ-002",
-      supplier: "Rexel - Porto",
-      status: "Respondido",
-      sentDate: "2024-02-01",
-      dueDate: "2024-02-15",
-      projectId: "92114",
-      lines: [
-        {
-          id: "line-003",
-          articuladoId: "art-001",
-          plannedQuantity: 3,
-          description: "Câmara IP policromática com capacidade de resolução 4K",
-          unit: "un",
-        },
-      ],
-    },
-    {
-      id: "RFQ-003",
-      supplier: "Sluz - Gaia",
-      status: "Pendente",
-      sentDate: "2024-02-02",
-      dueDate: "2024-02-16",
-      projectId: "92114",
-      lines: [
-        {
-          id: "line-004",
-          articuladoId: "art-003",
-          plannedQuantity: 45,
-          description: "GEN - Iluminação Normal Geral Vários",
-          unit: "un",
-        },
-        {
-          id: "line-005",
-          articuladoId: "art-005",
-          plannedQuantity: 150,
-          description: "Tubagem em PVC para instalações elétricas",
-          unit: "m",
-        },
-      ],
-    },
-    {
-      id: "RFQ-004",
-      supplier: "Nortécnica",
-      status: "Pendente",
-      sentDate: "2024-02-03",
-      dueDate: "2024-02-17",
-      projectId: "92114",
-      lines: [
-        {
-          id: "line-006",
-          articuladoId: "art-004",
-          plannedQuantity: 18,
-          description: "GEN - GTC/Geral/Vários",
-          unit: "un",
-        },
-      ],
-    },
-  ]
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch("/api/rfqs")
+      if (res.ok) {
+        const data: ApiRFQ[] = await res.json()
+        setRfqs(data)
+      }
+    }
+    load()
+  }, [])
+
+  const getStatus = (rfq: ApiRFQ) => {
+    if (rfq.sentAt) return "Respondido"
+    return "Pendente"
+  }
 
   const suppliers = [...new Set(rfqs.map((rfq) => rfq.supplier))]
 
   const filteredRFQs = rfqs.filter((rfq) => {
     const matchesSearch =
-      rfq.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rfq.supplier.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || rfq.status === statusFilter
+      String(rfq.id).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rfq.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rfq.project.toLowerCase().includes(searchTerm.toLowerCase())
+    const status = getStatus(rfq)
+    const matchesStatus = statusFilter === "all" || status === statusFilter
     const matchesSupplier = supplierFilter === "all" || rfq.supplier === supplierFilter
     return matchesSearch && matchesStatus && matchesSupplier
   })
@@ -140,8 +82,8 @@ export default function PedidosPage() {
     }
   }
 
-  const pendingRFQs = rfqs.filter((rfq) => rfq.status === "Pendente")
-  const respondedRFQs = rfqs.filter((rfq) => rfq.status === "Respondido")
+  const pendingRFQs = rfqs.filter((rfq) => getStatus(rfq) === "Pendente")
+  const respondedRFQs = rfqs.filter((rfq) => getStatus(rfq) === "Respondido")
 
   return (
     <div className="space-y-6">
@@ -205,7 +147,7 @@ export default function PedidosPage() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Math.round((respondedRFQs.length / rfqs.length) * 100)}%</div>
+            <div className="text-2xl font-bold">{rfqs.length > 0 ? Math.round((respondedRFQs.length / rfqs.length) * 100) : 0}%</div>
             <p className="text-xs text-muted-foreground">Eficácia dos pedidos</p>
           </CardContent>
         </Card>
@@ -282,21 +224,23 @@ export default function PedidosPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRFQs.map((rfq) => (
+                  {filteredRFQs.map((rfq) => {
+                    const status = getStatus(rfq)
+                    return (
                     <TableRow key={rfq.id}>
-                      <TableCell className="font-medium">{rfq.id}</TableCell>
+                      <TableCell className="font-medium">RFQ-{rfq.id}</TableCell>
                       <TableCell>{rfq.supplier}</TableCell>
                       <TableCell>{rfq.lines.length}</TableCell>
-                      <TableCell>{new Date(rfq.sentDate).toLocaleDateString("pt-PT")}</TableCell>
+                      <TableCell>{new Date(rfq.createdAt).toLocaleDateString("pt-PT")}</TableCell>
                       <TableCell>{new Date(rfq.dueDate).toLocaleDateString("pt-PT")}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusVariant(rfq.status)} className="flex items-center gap-1 w-fit">
-                          {getStatusIcon(rfq.status)}
-                          {rfq.status}
+                        <Badge variant={getStatusVariant(status)} className="flex items-center gap-1 w-fit">
+                          {getStatusIcon(status)}
+                          {status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{rfq.projectId}</Badge>
+                        <Badge variant="outline">{rfq.project}</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
@@ -314,7 +258,8 @@ export default function PedidosPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    )
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
@@ -333,7 +278,7 @@ export default function PedidosPage() {
                   <div key={rfq.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <h4 className="font-medium">{rfq.id}</h4>
+                        <h4 className="font-medium">RFQ-{rfq.id}</h4>
                         <p className="text-sm text-muted-foreground">{rfq.supplier}</p>
                       </div>
                       <div className="text-right">
@@ -344,7 +289,7 @@ export default function PedidosPage() {
                       </div>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {rfq.lines.length} linhas • Projeto {rfq.projectId}
+                      {rfq.lines.length} linhas • Projeto {rfq.project}
                     </div>
                   </div>
                 ))}
@@ -365,13 +310,13 @@ export default function PedidosPage() {
                   <div key={rfq.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <h4 className="font-medium">{rfq.id}</h4>
+                        <h4 className="font-medium">RFQ-{rfq.id}</h4>
                         <p className="text-sm text-muted-foreground">{rfq.supplier}</p>
                       </div>
                       <div className="text-right">
                         <Badge variant="default">Respondido</Badge>
                         <div className="mt-1">
-                          <Link href={`/respostas/${rfq.id}`}>
+                          <Link href="/respostas">
                             <Button variant="outline" size="sm">
                               Ver Resposta
                             </Button>
@@ -380,7 +325,7 @@ export default function PedidosPage() {
                       </div>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {rfq.lines.length} linhas • Projeto {rfq.projectId}
+                      {rfq.lines.length} linhas • Projeto {rfq.project}
                     </div>
                   </div>
                 ))}

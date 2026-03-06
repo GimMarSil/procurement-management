@@ -1,7 +1,9 @@
 import nodemailer from 'nodemailer'
 import path from 'path'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { withErrorHandling, parseBody } from '@/lib/api-handler'
+import { sendEmailSchema } from '@/lib/schemas'
 
 // Allowed attachment directory (only files uploaded to the project)
 const UPLOADS_DIR = path.resolve(process.cwd(), 'uploads')
@@ -32,7 +34,7 @@ function sanitizeAttachments(
     })
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withErrorHandling(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
 
   // Validate RFQ exists
@@ -42,13 +44,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'RFQ not found' }, { status: 404 })
   }
 
-  const body = await req.json()
-  const { to, subject, text, attachments } = body
+  const parsed = await parseBody(req, sendEmailSchema)
+  if (!parsed.success) return parsed.response
 
-  // Validate required fields
-  if (!to || typeof to !== 'string' || !subject || typeof subject !== 'string') {
-    return NextResponse.json({ error: 'Missing required fields: to, subject' }, { status: 400 })
-  }
+  const { to, subject, text, attachments } = parsed.data
 
   // Validate recipient
   const recipients = to.split(',').map((e: string) => e.trim()).filter(Boolean)
@@ -93,4 +92,4 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   })
 
   return NextResponse.json({ success: true })
-}
+})
