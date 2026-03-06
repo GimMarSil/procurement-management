@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,64 +15,18 @@ export default function AdjudicacoesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [supplierFilter, setSupplierFilter] = useState("all")
+  const [awards, setAwards] = useState<AwardType[]>([])
 
-  // Mock data de adjudicações
-  const awards: AwardType[] = [
-    {
-      id: "award-001",
-      projectId: "92114",
-      awardDate: "2024-02-20",
-      totalValue: 49197.22,
-      status: "Criada",
-      lines: [
-        {
-          id: "award-line-001",
-          articuladoId: "art-001",
-          supplier: "Rexel - Porto",
-          responseItemId: "item-003",
-          quantity: 3,
-          unitPrice: 1317.11,
-          totalPrice: 3951.33,
-        },
-        {
-          id: "award-line-002",
-          articuladoId: "art-002",
-          supplier: "FrancAir",
-          responseItemId: "item-001",
-          quantity: 263,
-          unitPrice: 80.27,
-          totalPrice: 21111.01,
-        },
-        {
-          id: "award-line-003",
-          articuladoId: "art-003",
-          supplier: "Sluz - Gaia",
-          responseItemId: "item-005",
-          quantity: 45,
-          unitPrice: 105.0,
-          totalPrice: 4725.0,
-        },
-      ],
-    },
-    {
-      id: "award-002",
-      projectId: "92118",
-      awardDate: "2024-02-15",
-      totalValue: 125000.0,
-      status: "Aprovada",
-      lines: [
-        {
-          id: "award-line-004",
-          articuladoId: "art-004",
-          supplier: "Nortécnica",
-          responseItemId: "item-006",
-          quantity: 100,
-          unitPrice: 1250.0,
-          totalPrice: 125000.0,
-        },
-      ],
-    },
-  ]
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch("/api/adjudicacoes")
+      if (res.ok) {
+        const data: AwardType[] = await res.json()
+        setAwards(data)
+      }
+    }
+    load()
+  }, [])
 
   const suppliers = [...new Set(awards.flatMap((award) => award.lines.map((line) => line.supplier)))]
 

@@ -20,125 +20,22 @@ import { calculateSupplierTotals, calculateScenarioTotal, getBestPrice, isValidF
 export default function ComparativoPage() {
   const [selectedScenario, setSelectedScenario] = useState<{ [lineId: string]: string }>({})
   const [showAwardModal, setShowAwardModal] = useState(false)
+  const [articuladoLines, setArticuladoLines] = useState<ArticuladoLine[]>([])
+  const [suppliers, setSuppliers] = useState<string[]>([])
+  const [comparativeMatrix, setComparativeMatrix] = useState<ComparativeMatrix>({})
 
-  // Mock data
-  const articuladoLines: ArticuladoLine[] = [
-    {
-      id: "art-001",
-      familyProduct: "009-CCTV",
-      description: "Câmara IP policromática 4K",
-      unit: "un",
-      plannedQuantity: 3,
-      projectId: "92114",
-    },
-    {
-      id: "art-002",
-      familyProduct: "026-Ilum. Segurança",
-      description: "Iluminação de Segurança Normal",
-      unit: "un",
-      plannedQuantity: 263,
-      projectId: "92114",
-    },
-    {
-      id: "art-003",
-      familyProduct: "025-Iluminação Norm",
-      description: "Iluminação Normal Geral",
-      unit: "un",
-      plannedQuantity: 45,
-      projectId: "92114",
-    },
-  ]
-
-  const suppliers = ["FrancAir", "Rexel - Porto", "Sluz - Gaia"]
-
-  // Matriz de comparação baseada nas imagens
-  const comparativeMatrix: ComparativeMatrix = {
-    "art-001": {
-      FrancAir: { available: false },
-      "Rexel - Porto": {
-        available: true,
-        price: 1317.11,
-        item: {
-          id: "item-003",
-          articuladoIds: ["art-001"],
-          supplierArticle: "IP-CAM-4K",
-          brand: "Hikvision",
-          supplierDescription: "Câmara IP 4K",
-          unit: "un",
-          quantity: 3,
-          unitPrice: 1317.11,
-          supplierRef: "HIK-4K-789",
-        },
-      },
-      "Sluz - Gaia": { available: false },
-    },
-    "art-002": {
-      FrancAir: {
-        available: true,
-        price: 80.27,
-        item: {
-          id: "item-001",
-          articuladoIds: ["art-002"],
-          supplierArticle: "ETAP-S1-LED",
-          brand: "ETAP",
-          supplierDescription: "Luminária emergência LED",
-          unit: "un",
-          quantity: 263,
-          unitPrice: 80.27,
-          supplierRef: "ETAP-S1-123",
-        },
-      },
-      "Rexel - Porto": { available: false },
-      "Sluz - Gaia": {
-        available: true,
-        price: 85.5,
-        item: {
-          id: "item-004",
-          articuladoIds: ["art-002"],
-          supplierArticle: "LED-EMER-S1",
-          brand: "Philips",
-          supplierDescription: "Sistema emergência LED",
-          unit: "un",
-          quantity: 263,
-          unitPrice: 85.5,
-          supplierRef: "PHI-LED-456",
-        },
-      },
-    },
-    "art-003": {
-      FrancAir: {
-        available: true,
-        price: 111.11,
-        item: {
-          id: "item-002",
-          articuladoIds: ["art-003"],
-          supplierArticle: "NORM-GEN-LED",
-          brand: "Philips",
-          supplierDescription: "Iluminação normal LED",
-          unit: "un",
-          quantity: 45,
-          unitPrice: 111.11,
-          supplierRef: "PHI-NORM-456",
-        },
-      },
-      "Rexel - Porto": { available: false },
-      "Sluz - Gaia": {
-        available: true,
-        price: 105.0,
-        item: {
-          id: "item-005",
-          articuladoIds: ["art-003"],
-          supplierArticle: "NORM-LED-STD",
-          brand: "Osram",
-          supplierDescription: "Iluminação LED standard",
-          unit: "un",
-          quantity: 45,
-          unitPrice: 105.0,
-          supplierRef: "OSR-LED-789",
-        },
-      },
-    },
-  }
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch("/api/comparativo")
+      if (res.ok) {
+        const data = await res.json()
+        setArticuladoLines(data.articuladoLines)
+        setSuppliers(data.suppliers)
+        setComparativeMatrix(data.matrix)
+      }
+    }
+    load()
+  }, [])
 
   const supplierTotals = calculateSupplierTotals(suppliers, articuladoLines, comparativeMatrix)
 
