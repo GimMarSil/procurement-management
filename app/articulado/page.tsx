@@ -143,8 +143,13 @@ export default function ArticuladoPage() {
             <Plus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€125.4K</div>
-            <p className="text-xs text-muted-foreground">Valor selecionado</p>
+            <div className="text-2xl font-bold">
+              {articuladoLines
+                .filter((l) => selectedLines.includes(l.id))
+                .reduce((sum, l) => sum + l.plannedQuantity, 0)
+                .toLocaleString("pt-PT")}
+            </div>
+            <p className="text-xs text-muted-foreground">Quantidade total selecionada</p>
           </CardContent>
         </Card>
       </div>

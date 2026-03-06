@@ -32,8 +32,8 @@ function sanitizeAttachments(
     })
 }
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
 
   // Validate RFQ exists
   const pool = await getDb()

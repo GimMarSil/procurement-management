@@ -40,6 +40,10 @@ export default function RFQsPage() {
 
   const fetchRfqs = async () => {
     const res = await fetch("/api/rfqs")
+    if (!res.ok) {
+      console.error('Failed to fetch RFQs:', res.status)
+      return
+    }
     const data = await res.json()
     setRfqs(data)
   }
@@ -59,11 +63,15 @@ export default function RFQsPage() {
   }
 
   const createRfq = async () => {
-    await fetch("/api/rfqs", {
+    const res = await fetch("/api/rfqs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ project, supplier, dueDate, lines }),
     })
+    if (!res.ok) {
+      console.error('Failed to create RFQ:', res.status)
+      return
+    }
     setProject("")
     setSupplier("")
     setDueDate("")

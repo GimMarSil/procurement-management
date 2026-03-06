@@ -549,8 +549,12 @@ function AwardCreator({
 
   useEffect(() => {
     fetch('/api/adjudicacoes')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to fetch awards: ${r.status}`)
+        return r.json()
+      })
       .then((data: AwardType[]) => setExistingAwards(data))
+      .catch((err) => console.error(err))
   }, [])
 
   useEffect(() => {
@@ -584,7 +588,7 @@ function AwardCreator({
 
     const award: AwardType = {
       id: `award-${Date.now()}`,
-      projectId: "92114",
+      projectId: articuladoLines[0]?.projectId ?? "",
       awardDate,
       lines: awardLines,
       totalValue: total,

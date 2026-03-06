@@ -1,28 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql from 'mssql'
 import { getDb } from '@/lib/db'
+import { withErrorHandling, parseBody } from '@/lib/api-handler'
+import { saveMappingsSchema } from '@/lib/schemas'
 
-export async function POST(req: NextRequest) {
-  const { responseId, mappings } = await req.json()
+export const POST = withErrorHandling(async (req: NextRequest) => {
+  const parsed = await parseBody(req, saveMappingsSchema)
+  if (!parsed.success) return parsed.response
 
-  if (!responseId || !mappings || typeof mappings !== 'object') {
-    return NextResponse.json({ error: 'Missing responseId or mappings' }, { status: 400 })
-  }
+  const { responseId, mappings } = parsed.data
 
   const db = await getDb()
   const transaction = db.transaction()
   await transaction.begin()
 
   try {
-    // Clear existing mappings for this response
     await transaction
       .request()
       .input('responseId', sql.NVarChar(255), responseId)
       .query('DELETE FROM ResponseMappings WHERE responseId = @responseId')
 
-    // Insert new mappings
     for (const [itemId, articuladoIds] of Object.entries(mappings)) {
-      if (!Array.isArray(articuladoIds)) continue
       for (const articuladoId of articuladoIds) {
         await transaction
           .request()
@@ -37,8 +35,8 @@ export async function POST(req: NextRequest) {
 
     await transaction.commit()
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (err) {
     await transaction.rollback()
-    return NextResponse.json({ error: 'Failed to save mappings' }, { status: 500 })
+    throw err
   }
-}
+})

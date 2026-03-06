@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sql from 'mssql'
 import { getDb } from '@/lib/db'
+import { withErrorHandling, parseBody } from '@/lib/api-handler'
+import { createRfqSchema } from '@/lib/schemas'
 
-export async function GET() {
+export const GET = withErrorHandling(async () => {
   const db = await getDb()
   const result = await db
     .request()
@@ -36,18 +38,13 @@ export async function GET() {
   }
 
   return NextResponse.json(rfqs)
-}
+})
 
-export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const { project, supplier, dueDate, lines = [] } = body
+export const POST = withErrorHandling(async (req: NextRequest) => {
+  const parsed = await parseBody(req, createRfqSchema)
+  if (!parsed.success) return parsed.response
 
-  if (!project || !supplier || !dueDate) {
-    return NextResponse.json(
-      { error: 'Missing fields' },
-      { status: 400 }
-    )
-  }
+  const { project, supplier, dueDate, lines } = parsed.data
 
   const db = await getDb()
   const transaction = db.transaction()
@@ -79,6 +76,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: rfqId }, { status: 201 })
   } catch (err) {
     await transaction.rollback()
-    return NextResponse.json({ error: 'Failed to create RFQ' }, { status: 500 })
+    throw err
   }
-}
+})

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -31,13 +31,14 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const [activeTab, setActiveTab] = useState("overview")
   const [showProposalModal, setShowProposalModal] = useState(false)
 
   // Dados baseados nas imagens fornecidas
   const project = {
-    id: params.id,
+    id,
     name: "Edifício Metrópolis",
     country: "Angola",
     client: "Ramos Ferreira",
