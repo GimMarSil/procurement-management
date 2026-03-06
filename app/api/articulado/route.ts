@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { withErrorHandling } from '@/lib/api-handler'
 
-export async function GET() {
-  try {
-    const db = await getDb()
-    const result = await db.request().query(
-      'SELECT id, familyProduct, description, unit, plannedQuantity, observations, code, projectId FROM ArticuladoLines'
-    )
-    return NextResponse.json(result.recordset)
-  } catch (err) {
-    console.error(err)
-    return new NextResponse('Failed to fetch articulado', { status: 500 })
-  }
-}
+export const GET = withErrorHandling(async () => {
+  const db = await getDb()
+  const result = await db.request().query(
+    'SELECT id, familyProduct, description, unit, plannedQuantity, observations, code, projectId FROM ArticuladoLines'
+  )
+  return NextResponse.json(result.recordset)
+})
 

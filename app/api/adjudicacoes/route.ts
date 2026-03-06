@@ -1,46 +1,105 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs/promises'
-import path from 'path'
-import { Award } from '@/types/procurement'
+import sql from 'mssql'
+import { getDb } from '@/lib/db'
+import { withErrorHandling, parseBody } from '@/lib/api-handler'
+import { createAwardSchema } from '@/lib/schemas'
 
-const DATA_PATH = path.join(process.cwd(), 'data', 'awards.json')
+export const GET = withErrorHandling(async () => {
+  const db = await getDb()
+  const result = await db.request().query(
+    `SELECT a.id, a.projectId, a.awardDate, a.totalValue, a.status,
+            al.id AS lineId, al.articuladoId, al.supplier, al.responseItemId,
+            al.quantity, al.unitPrice, al.totalPrice
+     FROM Awards a
+     LEFT JOIN AwardLines al ON al.awardId = a.id
+     ORDER BY a.id`
+  )
 
-async function readData(): Promise<Award[]> {
-  let data: string
-  try {
-    data = await fs.readFile(DATA_PATH, 'utf8')
-  } catch (err: unknown) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
-    throw err
+  const awards: any[] = []
+  for (const row of result.recordset) {
+    let award = awards.find((a) => a.id === row.id)
+    if (!award) {
+      award = {
+        id: String(row.id),
+        projectId: row.projectId,
+        awardDate: row.awardDate,
+        totalValue: row.totalValue,
+        status: row.status,
+        lines: [],
+      }
+      awards.push(award)
+    }
+    if (row.lineId) {
+      award.lines.push({
+        id: String(row.lineId),
+        articuladoId: row.articuladoId,
+        supplier: row.supplier,
+        responseItemId: row.responseItemId,
+        quantity: row.quantity,
+        unitPrice: row.unitPrice,
+        totalPrice: row.totalPrice,
+      })
+    }
   }
-  // If file exists but JSON is corrupt, throw instead of silently returning []
-  return JSON.parse(data)
-}
 
-async function writeData(data: Award[]) {
-  await fs.mkdir(path.dirname(DATA_PATH), { recursive: true })
-  await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2))
-}
-
-export async function GET() {
-  const awards = await readData()
   return NextResponse.json(awards)
-}
+})
 
-export async function POST(req: NextRequest) {
-  const newAward: Award = await req.json()
-  const lines = Array.isArray(newAward.lines) ? newAward.lines : []
-  const awards = await readData()
+export const POST = withErrorHandling(async (req: NextRequest) => {
+  const parsed = await parseBody(req, createAwardSchema)
+  if (!parsed.success) return parsed.response
 
-  // conflict detection: check if any line articulado already awarded
+  const { projectId, awardDate, lines, totalValue, status } = parsed.data
+
+  const db = await getDb()
+
+  // Conflict detection: check if any articulado line is already awarded
   for (const line of lines) {
-    if (awards.some(a => a.lines.some(l => l.articuladoId === line.articuladoId))) {
+    const existing = await db
+      .request()
+      .input('articuladoId', sql.NVarChar(255), line.articuladoId)
+      .query('SELECT id FROM AwardLines WHERE articuladoId = @articuladoId')
+    if (existing.recordset.length > 0) {
       return NextResponse.json({ error: 'Line already awarded' }, { status: 409 })
     }
   }
 
-  const safeAward = { ...newAward, lines }
-  awards.push(safeAward)
-  await writeData(awards)
-  return NextResponse.json(safeAward, { status: 201 })
-}
+  const transaction = db.transaction()
+  await transaction.begin()
+
+  try {
+    const result = await transaction
+      .request()
+      .input('projectId', sql.NVarChar(255), projectId)
+      .input('awardDate', sql.NVarChar(50), awardDate || new Date().toISOString())
+      .input('totalValue', sql.Float, totalValue)
+      .input('status', sql.NVarChar(50), status)
+      .query(
+        'INSERT INTO Awards (projectId, awardDate, totalValue, status) OUTPUT INSERTED.id VALUES (@projectId, @awardDate, @totalValue, @status)'
+      )
+
+    const awardId = result.recordset[0].id
+
+    for (const line of lines) {
+      await transaction
+        .request()
+        .input('awardId', sql.NVarChar(255), String(awardId))
+        .input('articuladoId', sql.NVarChar(255), line.articuladoId)
+        .input('supplier', sql.NVarChar(255), line.supplier)
+        .input('responseItemId', sql.NVarChar(255), line.responseItemId)
+        .input('quantity', sql.Float, line.quantity)
+        .input('unitPrice', sql.Float, line.unitPrice)
+        .input('totalPrice', sql.Float, line.totalPrice)
+        .query(
+          `INSERT INTO AwardLines (awardId, articuladoId, supplier, responseItemId, quantity, unitPrice, totalPrice)
+           VALUES (@awardId, @articuladoId, @supplier, @responseItemId, @quantity, @unitPrice, @totalPrice)`
+        )
+    }
+
+    await transaction.commit()
+    return NextResponse.json({ id: String(awardId) }, { status: 201 })
+  } catch (err) {
+    await transaction.rollback()
+    throw err
+  }
+})

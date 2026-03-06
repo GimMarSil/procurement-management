@@ -46,14 +46,38 @@ export default function SettingsPage() {
     numberFormat: "european",
   })
 
+  const [saved, setSaved] = useState(false)
+
   const handleSave = () => {
-    // Simular salvamento
-    console.log("Configurações salvas:", settings)
+    // TODO: persist settings to API when backend is ready
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
   const handleReset = () => {
-    // Simular reset
-    console.log("Configurações resetadas")
+    setSettings({
+      companyName: "Ramos Ferreira",
+      defaultCountry: "AO",
+      defaultCurrency: "EUR",
+      minMargin: 15,
+      maxRFQDays: 30,
+      smtpServer: "smtp.office365.com",
+      smtpPort: 587,
+      emailSender: "compras@ramosferreira.com",
+      emailTemplate: "template_default",
+      emailNotifications: true,
+      rfqReminders: true,
+      marginAlerts: true,
+      overdueAlerts: true,
+      phcApiUrl: "https://api.phc.pt/v1",
+      phcApiKey: "****-****-****-****",
+      autoSync: true,
+      syncInterval: 60,
+      theme: "light",
+      language: "pt",
+      dateFormat: "dd/MM/yyyy",
+      numberFormat: "european",
+    })
   }
 
   return (
@@ -70,7 +94,7 @@ export default function SettingsPage() {
           </Button>
           <Button onClick={handleSave}>
             <Save className="h-4 w-4 mr-2" />
-            Guardar
+            {saved ? "Guardado!" : "Guardar"}
           </Button>
         </div>
       </div>

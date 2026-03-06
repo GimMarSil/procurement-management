@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { Award, CheckCircle, AlertTriangle, TrendingUp, Crown, Calculator, FileCheck } from "lucide-react"
 import type { ComparativeMatrix, ArticuladoLine, Award as AwardType } from "@/types/procurement"
+import { calculateSupplierTotals, calculateScenarioTotal, getBestPrice, isValidForAward } from "@/lib/comparative-utils"
 
 export default function ComparativoPage() {
   const [selectedScenario, setSelectedScenario] = useState<{ [lineId: string]: string }>({})
@@ -139,50 +140,7 @@ export default function ComparativoPage() {
     },
   }
 
-  // Calcular totais por fornecedor
-  const calculateSupplierTotals = () => {
-    const totals: { [supplier: string]: { total: number; coverage: number; lines: string[] } } = {}
-
-    suppliers.forEach((supplier) => {
-      let total = 0
-      let coverage = 0
-      const lines: string[] = []
-
-      articuladoLines.forEach((line) => {
-        const supplierData = comparativeMatrix[line.id]?.[supplier]
-        if (supplierData?.available && supplierData.price) {
-          total += supplierData.price * line.plannedQuantity
-          coverage++
-          lines.push(line.id)
-        }
-      })
-
-      totals[supplier] = {
-        total,
-        coverage: (coverage / articuladoLines.length) * 100,
-        lines,
-      }
-    })
-
-    return totals
-  }
-
-  const supplierTotals = calculateSupplierTotals()
-
-  // Calcular total do cenário selecionado
-  const calculateScenarioTotal = () => {
-    let total = 0
-    articuladoLines.forEach((line) => {
-      const selectedSupplier = selectedScenario[line.id]
-      if (selectedSupplier) {
-        const supplierData = comparativeMatrix[line.id]?.[selectedSupplier]
-        if (supplierData?.available && supplierData.price) {
-          total += supplierData.price * line.plannedQuantity
-        }
-      }
-    })
-    return total
-  }
+  const supplierTotals = calculateSupplierTotals(suppliers, articuladoLines, comparativeMatrix)
 
   const handleLineSelection = (lineId: string, supplier: string) => {
     setSelectedScenario((prev) => {
