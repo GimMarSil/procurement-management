@@ -165,26 +165,7 @@ export default function ComparativoPage() {
     })
   }
 
-  const isValidForAward = () => {
-    return articuladoLines.every((line) => selectedScenario[line.id])
-  }
-
-  const getBestPrice = (lineId: string) => {
-    let bestPrice = Number.POSITIVE_INFINITY
-    let bestSupplier = ""
-
-    suppliers.forEach((supplier) => {
-      const supplierData = comparativeMatrix[lineId]?.[supplier]
-      if (supplierData?.available && supplierData.price && supplierData.price < bestPrice) {
-        bestPrice = supplierData.price
-        bestSupplier = supplier
-      }
-    })
-
-    return { price: bestPrice === Number.POSITIVE_INFINITY ? null : bestPrice, supplier: bestSupplier }
-  }
-
-  const scenarioTotal = calculateScenarioTotal()
+  const scenarioTotal = calculateScenarioTotal(articuladoLines, selectedScenario, comparativeMatrix)
   const selectedLinesCount = Object.keys(selectedScenario).length
 
   return (
@@ -197,7 +178,7 @@ export default function ComparativoPage() {
         <div className="flex gap-2">
           <Dialog open={showAwardModal} onOpenChange={setShowAwardModal}>
             <DialogTrigger asChild>
-              <Button disabled={!isValidForAward()}>
+              <Button disabled={!isValidForAward(articuladoLines, selectedScenario)}>
                 <Award className="h-4 w-4 mr-2" />
                 Criar Adjudicação
               </Button>
@@ -262,11 +243,11 @@ export default function ComparativoPage() {
             <FileCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${isValidForAward() ? "text-green-600" : "text-yellow-600"}`}>
-              {isValidForAward() ? "Pronto" : "Pendente"}
+            <div className={`text-2xl font-bold ${isValidForAward(articuladoLines, selectedScenario) ? "text-green-600" : "text-yellow-600"}`}>
+              {isValidForAward(articuladoLines, selectedScenario) ? "Pronto" : "Pendente"}
             </div>
             <p className="text-xs text-muted-foreground">
-              {isValidForAward() ? "Para adjudicação" : "Selecionar todas as linhas"}
+              {isValidForAward(articuladoLines, selectedScenario) ? "Para adjudicação" : "Selecionar todas as linhas"}
             </p>
           </CardContent>
         </Card>
@@ -346,7 +327,7 @@ export default function ComparativoPage() {
               </TableHeader>
               <TableBody>
                 {articuladoLines.map((line) => {
-                  const bestPrice = getBestPrice(line.id)
+                  const bestPrice = getBestPrice(line.id, suppliers, comparativeMatrix)
 
                   return (
                     <TableRow key={line.id}>
