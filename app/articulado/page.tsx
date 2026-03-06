@@ -23,7 +23,6 @@ export default function ArticuladoPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [familyFilter, setFamilyFilter] = useState("all")
   const [selectedLines, setSelectedLines] = useState<string[]>([])
-  const [selectAll, setSelectAll] = useState(false)
   const [showRFQModal, setShowRFQModal] = useState(false)
 
   const [articuladoLines, setArticuladoLines] = useState<ArticuladoLine[]>([])
@@ -50,21 +49,23 @@ export default function ArticuladoPage() {
     return matchesSearch && matchesFamily
   })
 
+  const selectAll = filteredLines.length > 0 && filteredLines.every((l) => selectedLines.includes(l.id))
+
   const handleSelectLine = (lineId: string, checked: boolean) => {
     if (checked) {
       setSelectedLines([...selectedLines, lineId])
     } else {
       setSelectedLines(selectedLines.filter((id) => id !== lineId))
-      setSelectAll(false)
     }
   }
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectAll(checked)
     if (checked) {
-      setSelectedLines(filteredLines.map((line) => line.id))
+      const filteredIds = filteredLines.map((line) => line.id)
+      setSelectedLines((prev) => [...new Set([...prev, ...filteredIds])])
     } else {
-      setSelectedLines([])
+      const filteredIds = new Set(filteredLines.map((line) => line.id))
+      setSelectedLines((prev) => prev.filter((id) => !filteredIds.has(id)))
     }
   }
 

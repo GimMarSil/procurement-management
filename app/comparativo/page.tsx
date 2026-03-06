@@ -185,10 +185,13 @@ export default function ComparativoPage() {
   }
 
   const handleLineSelection = (lineId: string, supplier: string) => {
-    setSelectedScenario((prev) => ({
-      ...prev,
-      [lineId]: supplier,
-    }))
+    setSelectedScenario((prev) => {
+      if (prev[lineId] === supplier) {
+        const { [lineId]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [lineId]: supplier }
+    })
   }
 
   const handleSupplierProposal = (supplier: string) => {
