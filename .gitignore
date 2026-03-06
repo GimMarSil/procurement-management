@@ -26,3 +26,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# data files
+/data/
+*.db
+
+# generated factory outputs
+/generated/
+
+# uploads
+/uploads/

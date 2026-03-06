@@ -192,14 +192,16 @@ export default function ComparativoPage() {
   }
 
   const handleSupplierProposal = (supplier: string) => {
-    const newScenario: { [lineId: string]: string } = {}
-    articuladoLines.forEach((line) => {
-      const supplierData = comparativeMatrix[line.id]?.[supplier]
-      if (supplierData?.available) {
-        newScenario[line.id] = supplier
-      }
+    setSelectedScenario((prev) => {
+      const merged = { ...prev }
+      articuladoLines.forEach((line) => {
+        const supplierData = comparativeMatrix[line.id]?.[supplier]
+        if (supplierData?.available) {
+          merged[line.id] = supplier
+        }
+      })
+      return merged
     })
-    setSelectedScenario(newScenario)
   }
 
   const isValidForAward = () => {
@@ -568,7 +570,10 @@ function AwardCreator({
     )
   }, [existingAwards, selectedScenario, articuladoLines])
 
+  const [submitting, setSubmitting] = useState(false)
+
   const createAward = async () => {
+    setSubmitting(true)
     const awardLines = articuladoLines
       .filter((line) => selectedScenario[line.id])
       .map((line) => {
@@ -603,11 +608,15 @@ function AwardCreator({
 
     if (res.status === 409) {
       alert('Conflito: já existe adjudicação para uma das linhas selecionadas.')
+      setSubmitting(false)
       return
     }
 
     if (res.ok) {
       onClose()
+    } else {
+      alert('Erro ao criar adjudicação')
+      setSubmitting(false)
     }
   }
 
@@ -690,8 +699,8 @@ function AwardCreator({
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button onClick={createAward} disabled={conflict}>
-          Criar Adjudicação
+        <Button onClick={createAward} disabled={conflict || submitting}>
+          {submitting ? "A criar..." : "Criar Adjudicação"}
         </Button>
       </div>
     </div>
