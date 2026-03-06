@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { getLogs } from '@/lib/audit'
 
-export default function LogsPage() {
-  const logs = getLogs()
+export default async function LogsPage() {
+  const logs = await getLogs()
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Logs</h1>

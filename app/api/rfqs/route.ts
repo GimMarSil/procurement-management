@@ -50,26 +50,35 @@ export async function POST(req: NextRequest) {
   }
 
   const db = await getDb()
-  const rfqResult = await db
-    .request()
-    .input('project', sql.NVarChar(255), project)
-    .input('supplier', sql.NVarChar(255), supplier)
-    .input('dueDate', sql.Date, dueDate)
-    .query(
-      'INSERT INTO RFQs (project, supplier, dueDate) OUTPUT INSERTED.id VALUES (@project, @supplier, @dueDate)'
-    )
-  const rfqId = rfqResult.recordset[0].id
+  const transaction = db.transaction()
+  await transaction.begin()
 
-  for (const line of lines) {
-    await db
+  try {
+    const rfqResult = await transaction
       .request()
-      .input('rfqId', sql.Int, rfqId)
-      .input('description', sql.NVarChar(255), line.description)
-      .input('quantity', sql.Int, line.quantity)
+      .input('project', sql.NVarChar(255), project)
+      .input('supplier', sql.NVarChar(255), supplier)
+      .input('dueDate', sql.Date, dueDate)
       .query(
-        'INSERT INTO RFQLines (rfqId, description, quantity) VALUES (@rfqId, @description, @quantity)'
+        'INSERT INTO RFQs (project, supplier, dueDate) OUTPUT INSERTED.id VALUES (@project, @supplier, @dueDate)'
       )
-  }
+    const rfqId = rfqResult.recordset[0].id
 
-  return NextResponse.json({ id: rfqId }, { status: 201 })
+    for (const line of lines) {
+      await transaction
+        .request()
+        .input('rfqId', sql.Int, rfqId)
+        .input('description', sql.NVarChar(255), line.description)
+        .input('quantity', sql.Int, line.quantity)
+        .query(
+          'INSERT INTO RFQLines (rfqId, description, quantity) VALUES (@rfqId, @description, @quantity)'
+        )
+    }
+
+    await transaction.commit()
+    return NextResponse.json({ id: rfqId }, { status: 201 })
+  } catch (err) {
+    await transaction.rollback()
+    return NextResponse.json({ error: 'Failed to create RFQ' }, { status: 500 })
+  }
 }

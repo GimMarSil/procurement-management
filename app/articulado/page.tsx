@@ -258,15 +258,35 @@ function CreateRFQForm({ selectedLines, onClose }: { selectedLines: ArticuladoLi
     "Microsoft Portugal",
   ]
 
-  const handleCreateRFQ = () => {
-    // Lógica para criar RFQ
-    console.log("Criar RFQ:", {
-      supplier,
-      lines: selectedLines,
-      dueDate,
-      observations,
-    })
-    onClose()
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleCreateRFQ = async () => {
+    setSubmitting(true)
+    try {
+      const res = await fetch("/api/rfqs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project: selectedLines[0]?.projectId ?? "",
+          supplier,
+          dueDate,
+          lines: selectedLines.map((l) => ({
+            description: l.description,
+            quantity: l.plannedQuantity,
+          })),
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || "Erro ao criar RFQ")
+        return
+      }
+      onClose()
+    } catch {
+      alert("Erro de rede ao criar RFQ")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -339,7 +359,7 @@ function CreateRFQForm({ selectedLines, onClose }: { selectedLines: ArticuladoLi
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button onClick={handleCreateRFQ} disabled={!supplier || !dueDate}>
+        <Button onClick={handleCreateRFQ} disabled={!supplier || !dueDate || submitting}>
           Criar Pedido
         </Button>
       </div>

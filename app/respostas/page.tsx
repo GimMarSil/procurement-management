@@ -340,9 +340,27 @@ function MappingEditor({
     }))
   }
 
-  const saveMappings = () => {
-    console.log("Guardar mapeamentos:", mappings)
-    onClose()
+  const [saving, setSaving] = useState(false)
+
+  const saveMappings = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch("/api/mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ responseId: response.id, mappings }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || "Erro ao guardar mapeamentos")
+        return
+      }
+      onClose()
+    } catch {
+      alert("Erro de rede ao guardar mapeamentos")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -428,7 +446,9 @@ function MappingEditor({
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button onClick={saveMappings}>Guardar Mapeamentos</Button>
+        <Button onClick={saveMappings} disabled={saving}>
+          {saving ? "A guardar..." : "Guardar Mapeamentos"}
+        </Button>
       </div>
     </div>
   )

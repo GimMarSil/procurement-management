@@ -1,25 +1,36 @@
-import Database from 'better-sqlite3'
-import path from 'path'
+import { getDb } from './db'
 
-const db = new Database(path.join(process.cwd(), 'logs.db'))
+let initialized = false
 
-// Ensure Logs table exists
-const init = db.prepare(
-  `CREATE TABLE IF NOT EXISTS Logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT NOT NULL,
-    user TEXT NOT NULL,
-    action TEXT NOT NULL,
-    details TEXT NOT NULL
-  )`
-)
-init.run()
+async function ensureTable() {
+  if (initialized) return
+  const pool = await getDb()
+  await pool.request().query(`
+    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Logs' AND xtype='U')
+    CREATE TABLE Logs (
+      id INT IDENTITY(1,1) PRIMARY KEY,
+      timestamp NVARCHAR(50) NOT NULL,
+      [user] NVARCHAR(255) NOT NULL,
+      action NVARCHAR(255) NOT NULL,
+      details NVARCHAR(MAX) NOT NULL
+    )
+  `)
+  initialized = true
+}
 
-export function logAction(user: string, action: string, details: string) {
+export async function logAction(user: string, action: string, details: string) {
+  await ensureTable()
+  const pool = await getDb()
   const timestamp = new Date().toISOString()
-  db.prepare(
-    'INSERT INTO Logs (timestamp, user, action, details) VALUES (?,?,?,?)'
-  ).run(timestamp, user, action, details)
+  await pool
+    .request()
+    .input('timestamp', timestamp)
+    .input('user', user)
+    .input('action', action)
+    .input('details', details)
+    .query(
+      'INSERT INTO Logs (timestamp, [user], action, details) VALUES (@timestamp, @user, @action, @details)'
+    )
 }
 
 export interface LogEntry {
@@ -29,8 +40,11 @@ export interface LogEntry {
   details: string
 }
 
-export function getLogs(): LogEntry[] {
-  return db
-    .prepare('SELECT timestamp, user, action, details FROM Logs ORDER BY id DESC')
-    .all()
+export async function getLogs(): Promise<LogEntry[]> {
+  await ensureTable()
+  const pool = await getDb()
+  const result = await pool
+    .request()
+    .query('SELECT timestamp, [user], action, details FROM Logs ORDER BY id DESC')
+  return result.recordset
 }
